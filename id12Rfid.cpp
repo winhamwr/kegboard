@@ -26,6 +26,18 @@ Thanks to:
 #include "kegboard_config.h"
 #include "KegboardPacket.h"
 
+#if KB_ENABLE_BUZZER
+#include "buzzer.h"
+
+PROGMEM prog_uint16_t RFID_MELODY[] = {
+  MELODY_NOTE(4, 1, 75), MELODY_NOTE(0, NOTE_SILENCE, 25),
+  MELODY_NOTE(4, 5, 75 ), MELODY_NOTE(0, NOTE_SILENCE, 25),
+  MELODY_NOTE(4, 3, 50), MELODY_NOTE(0, NOTE_SILENCE, 50),
+
+  MELODY_NOTE(0, NOTE_SILENCE, 0)
+};
+#endif
+
 void rfidWriteAuthPacket(char* device_name, uint8_t* token, int token_len, char status) {
   KegboardPacket packet;
   packet.SetType(KBM_AUTH_TOKEN);
@@ -90,6 +102,9 @@ void handleRfidAuth(NewSoftSerial *rfidSerial) {
 				return;
 			}
 			rfidWriteAuthPacket(KB_RFID_DEVICENAME, (uint8_t*)&code, 5, 1);
+#if KB_ENABLE_BUZZER
+			playMelody(RFID_MELODY);
+#endif
 		}
 		bytesread = 0;
 	  }
