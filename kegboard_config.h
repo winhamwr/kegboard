@@ -81,6 +81,8 @@
 #define KB_DEFAULT_BOARDNAME_LEN      8  // must match #chars above
 #define KB_DEFAULT_BAUD_RATE          115200
 
+#define KB_RFID_DEVICENAME	"rfid"
+
 // Size in entries of the onewire presence bus cache.  This many IDs can be
 // concurrently tracked on the bus.
 #define ONEWIRE_CACHE_SIZE 8

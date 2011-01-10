@@ -3,6 +3,7 @@
 
 #include <NewSoftSerial.h>
 
+void rfidWriteAuthPacket(char*, uint8_t*, int, char);
 void setupRfid(NewSoftSerial*);
 void handleRfidAuth(NewSoftSerial*);
 

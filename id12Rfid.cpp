@@ -1,8 +1,39 @@
+/**
+ID-12 RFID authentication for kegbot. 
+
+Uses and requires the NewSoftSerial library
+<http://arduiniana.org/libraries/NewSoftSerial/> from Mikal Hart.
+
+To enable, set KB_ENABLE_RFID to 1 in kegbot_config.h and connect pin9 from 
+your ID-12 to D6 (or whatever you have for KB_PIN_SERIAL_RFID_TX) on your 
+arduino.
+
+Adapted for kegbot by Wes Winham <winhamwr@gmail.com> from code found at: 
+http://www.arduino.cc/playground/Code/ID12
+
+Thanks to:
+* BARRAGAN <http://people.interaction-ivrea.it/h.barragan>
+* HC Gilje <http://hcgilje.wordpress.com/resources/rfid_id12_tagreader/>
+* djmatic
+* Martijn The <http://www.martijnthe.nl/>
+**/
+
 #include <NewSoftSerial.h>
 
 #include "WProgram.h"
 #include "id12Rfid.h"
+#include "kegboard.h"
 #include "kegboard_config.h"
+#include "KegboardPacket.h"
+
+void rfidWriteAuthPacket(char* device_name, uint8_t* token, int token_len, char status) {
+  KegboardPacket packet;
+  packet.SetType(KBM_AUTH_TOKEN);
+  packet.AddTag(KBM_AUTH_TOKEN_TAG_DEVICE, strlen(device_name), device_name);
+  packet.AddTag(KBM_AUTH_TOKEN_TAG_TOKEN, token_len, (char*)token);
+  packet.AddTag(KBM_AUTH_TOKEN_TAG_STATUS, 1, &status);
+  packet.Print();
+}
 
 void setupRfid(NewSoftSerial *rfidSerial) {
 	pinMode(KB_PIN_SERIAL_RFID_TX, INPUT);
@@ -19,7 +50,6 @@ void handleRfidAuth(NewSoftSerial *rfidSerial) {
 	byte tempbyte = 0;
 
 	if(rfidSerial->available() > 0) {
-	  Serial.println("RFID Detected");
 	  if((val = rfidSerial->read()) == 2) {                  // check for header 
 		bytesread = 0; 
 		while (bytesread < 12) {                        // read 10 digit code + 2 digit checksum
@@ -53,23 +83,14 @@ void handleRfidAuth(NewSoftSerial *rfidSerial) {
 		  } 
 		} 
 
-		// Output to Serial:
 
-		if (bytesread == 12) {                          // if 12 digit read is complete
-		  Serial.print("5-byte code: ");
-		  for (i=0; i<5; i++) {
-			if (code[i] < 16) Serial.print("0");
-			Serial.print(code[i], HEX);
-			Serial.print(" ");
-		  }
-		  Serial.println();
-
-		  Serial.print("Checksum: ");
-		  Serial.print(code[5], HEX);
-		  Serial.println(code[5] == checksum ? " -- passed." : " -- error.");
-		  Serial.println();
+		// Output kegboard auth_token packet
+		if (bytesread == 12) {
+			if (code[5] != checksum) {
+				return;
+			}
+			rfidWriteAuthPacket(KB_RFID_DEVICENAME, (uint8_t*)&code, 5, 1);
 		}
-
 		bytesread = 0;
 	  }
 	}
